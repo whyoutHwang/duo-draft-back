@@ -48,7 +48,10 @@ exports.signIn = async (req, res) => {
   }
 
   if (await bcrypt.compare(password, user.password)) {
-    res.status(200).json({ message: "로그인 성공!", userId: user._id });
+    res.status(200).json({
+      message: "로그인 성공!",
+      user: user,
+    });
   } else {
     res.status(400).json({ message: "잘못된 비밀번호입니다." });
   }
