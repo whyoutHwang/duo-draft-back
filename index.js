@@ -16,5 +16,5 @@ connectDB(); // 데이터베이스 연결
 app.use("/api/user", userRoutes); // 사용자 관련 라우트
 app.use("/api/students", studentRoutes); // 학생 라우트 설정
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
