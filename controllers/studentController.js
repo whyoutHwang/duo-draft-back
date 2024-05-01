@@ -9,10 +9,10 @@ const studentsCollection = db.collection("students");
 
 exports.getStudents = async (req, res) => {
   const teacherId = req.query.teacherId; // 쿼리 파라미터에서 teacherId 추출
-  console.log(teacherId);
+  
   try {
     const students = await studentsCollection.find({ teacher_id: new ObjectId(teacherId) }).toArray();
-    console.log(students); // 서버 콘솔에 결과 출력
+  
     res.status(200).json(students);
   } catch (error) {
     console.log(error);
@@ -25,8 +25,6 @@ exports.getStudents = async (req, res) => {
 
 exports.createStudent = async (req, res) => {
   const { name, gender, teacherId } = req.body; // 요청에서 학생 정보 추출
-  console.log("createStudent");
-  console.log(name, gender, teacherId);
   try {
     // 학생 정보를 데이터베이스에 저장
     const result = await studentsCollection.insertOne({
@@ -52,8 +50,6 @@ exports.updateStudent = async (req, res) => {
   const { id } = req.params; // URL 파라미터에서 학생 ID 추출
   const { name, gender, teacherId } = req.body; // 요청에서 학생 정보 추출
 
-  console.log("updateStudent");
-  console.log(id, name, gender, teacherId);
 
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({
