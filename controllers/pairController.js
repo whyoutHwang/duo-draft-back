@@ -33,13 +33,16 @@ exports.getPairHistory = async (req, res) => {
 
 exports.savePairHistory = async (req, res) => {
   try {
-    const { pairs } = req.body;
-    const pairHistory = await pairCollection.findOneAndUpdate(
-      {},
-      { pairs },
-      { new: true, upsert: true }
-    );
-    res.json(pairHistory);
+    const { teacherId, pairs } = req.body;
+
+    await pairCollection.insertOne({
+      teacher_id: teacherId,
+      pairs: pairs,
+      date: new Date(),
+      shuffle_number: 1,
+    });
+
+    res.sendStatus(201);
   } catch (error) {
     console.error("Failed to save pair history:", error);
     res.status(500).json({ error: "Failed to save pair history" });
