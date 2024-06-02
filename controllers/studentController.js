@@ -55,8 +55,7 @@ exports.createStudent = async (req, res) => {
 
 exports.updateStudent = async (req, res) => {
   const { id } = req.params; // URL 파라미터에서 학생 ID 추출
-  const { name, gender, teacherId } = req.body; // 요청에서 학생 정보 추출
-
+  const { name, gender, teacherId, favoriteFriend, foughtFriend } = req.body; // 요청에서 학생 정보 추출
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({
       message: "유효하지 않은 학생 ID입니다.",
@@ -66,7 +65,15 @@ exports.updateStudent = async (req, res) => {
   try {
     const result = await studentsCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { name, gender, teacher_id: new ObjectId(teacherId) } }
+      {
+        $set: {
+          name,
+          gender,
+          teacher_id: new ObjectId(teacherId),
+          favorite_friend: favoriteFriend, // 문자열 배열 그대로 저장
+          fought_friend: foughtFriend, // 문자열 배열 그대로 저장
+        },
+      }
     );
 
     if (result.matchedCount === 0) {
