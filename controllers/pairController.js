@@ -9,7 +9,10 @@ const { ObjectId } = require("mongodb");
 
 exports.getPairHistory = async (req, res) => {
   try {
-    console.log("getPairHistory");
+    if (!ObjectId.isValid(req.params.teacherId)) {
+      return res.status(400).json({ error: "Invalid teacher ID" });
+    }
+
     const teacherId = new ObjectId(req.params.teacherId);
 
     const pairHistory = await pairCollection
