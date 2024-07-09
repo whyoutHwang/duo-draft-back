@@ -4,6 +4,7 @@ const { MongoClient } = require("mongodb");
 const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db("duo-draft-database");
 const pairCollection = db.collection("pair_history");
+const studentPairCollection = db.collection("student_pairs");
 
 const { ObjectId } = require("mongodb");
 
@@ -27,7 +28,24 @@ exports.getPairHistory = async (req, res) => {
         .json({ error: "No pair history found for the teacher" });
     }
 
-    res.json(pairHistory[0]);
+    const pairs = pairHistory[0].pairs;
+    const studentIds = pairs
+      .flatMap((pair) => [pair.student1._id, pair.student2?._id])
+      .filter((id) => id);
+
+    const studentPairHistory = await studentPairCollection
+      .find({ student_id: { $in: studentIds.map((id) => new ObjectId(id)) } })
+      .toArray();
+
+    const previousPairsMap = new Map();
+    studentPairHistory.forEach((record) => {
+      previousPairsMap.set(
+        record.student_id.toString(),
+        record.paired_with.map((id) => id.toString())
+      );
+    });
+
+    res.json({ pairs, previousPairsMap });
   } catch (error) {
     console.error("Failed to fetch pair history:", error);
     res.status(500).json({ error: "Failed to fetch pair history" });
@@ -38,8 +56,10 @@ exports.savePairHistory = async (req, res) => {
   try {
     const { teacherId, pairs } = req.body;
 
+    const teacherObjectId = new ObjectId(teacherId);
+
     await pairCollection.insertOne({
-      teacher_id: teacherId,
+      teacher_id: teacherObjectId,
       pairs: pairs,
       date: new Date(),
       shuffle_number: 1,
