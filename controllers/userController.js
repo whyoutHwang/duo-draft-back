@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 
 // MongoDB 클라이언트 초기화 (DB 연결 설정)
 const client = new MongoClient(process.env.MONGODB_URI);
@@ -54,5 +54,97 @@ exports.signIn = async (req, res) => {
     });
   } else {
     res.status(400).json({ message: "잘못된 비밀번호입니다." });
+  }
+};
+
+exports.getTeacherInfo = async (req, res) => {
+  try {
+    const teacherId = req.params.id; // URL 파라미터로 교사 ID를 받는다고 가정
+    const teacher = await usersCollection.findOne({
+      _id: new ObjectId(teacherId),
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ message: "선생님을 찾을 수 없습니다." });
+    }
+
+    // 비밀번호 정보는 제외하고 반환
+    const { password, ...teacherInfo } = teacher;
+    console.log(teacherInfo);
+    res.status(200).json(teacherInfo);
+  } catch (error) {
+    res.status(500).json({
+      message: "선생님 정보를 가져오는 중 에러가 발생했습니다.",
+      error: error.message,
+    });
+  }
+};
+
+exports.getTeacherInfo = async (req, res) => {
+  try {
+    const teacherId = req.params.id;
+    const teacher = await usersCollection.findOne({
+      _id: new ObjectId(teacherId),
+    });
+
+    if (!teacher) {
+      return res.status(404).json({ message: "선생님을 찾을 수 없습니다." });
+    }
+
+    const { password, ...teacherInfo } = teacher;
+    res.status(200).json(teacherInfo);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "선생님 정보를 가져오는 중 에러가 발생했습니다.",
+      error: error.message,
+    });
+  }
+};
+
+exports.updateTeacher = async (req, res) => {
+  const { id } = req.params;
+  const { name, classInfo } = req.body;
+  const imageUrl = req.file ? req.file.location : req.body.imageUrl;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({
+      message: "유효하지 않은 선생님 ID입니다.",
+    });
+  }
+
+  try {
+    const updateData = {
+      name,
+      classInfo,
+    };
+
+    if (imageUrl) {
+      updateData.imageUrl = imageUrl;
+    }
+
+    const result = await usersCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        message: "선생님을 찾을 수 없습니다.",
+      });
+    }
+
+    const updatedTeacher = await usersCollection.findOne({
+      _id: new ObjectId(id),
+    });
+
+    const { password, ...teacherInfo } = updatedTeacher;
+    res.status(200).json(teacherInfo);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: "선생님 정보를 업데이트하는 중 에러가 발생했습니다.",
+      error: error.message,
+    });
   }
 };
