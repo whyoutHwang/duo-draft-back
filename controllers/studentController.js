@@ -25,13 +25,15 @@ exports.getStudents = async (req, res) => {
   }
 };
 exports.createStudent = async (req, res) => {
-  const { name, gender, teacherId, favoriteFriend, foughtFriend } = req.body;
+  const { name, gender, birthDate, teacherId, favoriteFriend, foughtFriend } =
+    req.body;
   const imageUrl = req.file ? req.file.location : "";
 
   try {
     const result = await studentsCollection.insertOne({
       name,
       gender,
+      birthDate,
       teacher_id: new ObjectId(teacherId),
       favorite_friend: favoriteFriend,
       fought_friend: foughtFriend,
@@ -53,8 +55,15 @@ exports.createStudent = async (req, res) => {
 
 exports.updateStudent = async (req, res) => {
   const { id } = req.params;
-  const { name, gender, teacherId, favoriteFriend, foughtFriend, imageUrl } =
-    req.body;
+  const {
+    name,
+    gender,
+    birthDate,
+    teacherId,
+    favoriteFriend,
+    foughtFriend,
+    imageUrl,
+  } = req.body;
 
   if (!ObjectId.isValid(id)) {
     return res.status(400).json({
@@ -66,6 +75,7 @@ exports.updateStudent = async (req, res) => {
     const updateData = {
       name,
       gender,
+      birthDate,
       teacher_id: new ObjectId(teacherId),
       favorite_friend: favoriteFriend,
       fought_friend: foughtFriend,
