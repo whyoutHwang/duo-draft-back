@@ -4,6 +4,7 @@ const {
   getStudents,
   createStudent,
   updateStudent,
+  createStudentsBatch,
 } = require("../controllers/studentController");
 
 const router = express.Router();
@@ -44,5 +45,7 @@ router.post("/upload", upload.single("image"), (req, res) => {
   }
   res.status(200).json({ location: req.file.location });
 });
+
+router.post("/batch", createStudentsBatch);
 
 module.exports = router;

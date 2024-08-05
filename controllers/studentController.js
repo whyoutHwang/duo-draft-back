@@ -53,6 +53,46 @@ exports.createStudent = async (req, res) => {
   }
 };
 
+exports.createStudentsBatch = async (req, res) => {
+  const { students, teacherId } = req.body;
+
+  if (!Array.isArray(students) || students.length === 0) {
+    return res.status(400).json({
+      message: "유효한 학생 데이터 배열이 필요합니다.",
+    });
+  }
+
+  try {
+    const studentsToInsert = students.map((student) => ({
+      name: student.name,
+      gender: student.gender,
+      birthDate: student.birthDate,
+      teacher_id: new ObjectId(teacherId),
+      favorite_friend: student.favoriteFriend || null,
+      fought_friend: student.foughtFriend || null,
+      imageUrl: student.imageUrl || null,
+      defaultImage: student.defaultImage,
+    }));
+
+    const result = await studentsCollection.insertMany(studentsToInsert);
+
+    const insertedStudents = await studentsCollection
+      .find({ _id: { $in: Object.values(result.insertedIds) } })
+      .toArray();
+
+    res.status(201).json({
+      message: `${result.insertedCount} 명의 학생이 성공적으로 등록되었습니다.`,
+      students: insertedStudents,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "학생 정보를 일괄 등록하는 중 에러가 발생했습니다.",
+      error: error.message,
+    });
+  }
+};
+
 exports.updateStudent = async (req, res) => {
   const { id } = req.params;
   const {
