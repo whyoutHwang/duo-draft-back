@@ -7,7 +7,19 @@ const postsCollection = db.collection("posts");
 // 모든 게시글 가져오기
 exports.getPosts = async (req, res) => {
   try {
-    const posts = await postsCollection.find().toArray();
+    const { postType, searchTerm } = req.query;
+    let query = {};
+    console.log(postType, searchTerm);
+
+    if (postType && postType !== "전체") {
+      query.postType = postType;
+    }
+
+    if (searchTerm) {
+      query.title = { $regex: searchTerm, $options: "i" }; // 'i'는 대소문자 구분 없이 검색
+    }
+
+    const posts = await postsCollection.find(query).toArray();
     res.status(200).json(posts);
   } catch (error) {
     console.error(error);
@@ -35,7 +47,7 @@ exports.createPost = async (req, res) => {
       content,
       teacher_id: new ObjectId(teacherId),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
 
     const newPost = await postsCollection.findOne({ _id: result.insertedId });
@@ -61,7 +73,7 @@ exports.getPostById = async (req, res) => {
 
   try {
     const post = await postsCollection.findOne({ _id: new ObjectId(id) });
-    
+
     if (!post) {
       return res.status(404).json({
         message: "게시글을 찾을 수 없습니다.",
@@ -97,8 +109,8 @@ exports.updatePost = async (req, res) => {
           postType,
           title,
           content,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       }
     );
 
@@ -108,7 +120,9 @@ exports.updatePost = async (req, res) => {
       });
     }
 
-    const updatedPost = await postsCollection.findOne({ _id: new ObjectId(id) });
+    const updatedPost = await postsCollection.findOne({
+      _id: new ObjectId(id),
+    });
     res.status(200).json(updatedPost);
   } catch (error) {
     console.error(error);
@@ -131,9 +145,9 @@ exports.deletePost = async (req, res) => {
   }
 
   try {
-    const result = await postsCollection.deleteOne({ 
+    const result = await postsCollection.deleteOne({
       _id: new ObjectId(id),
-      teacher_id: new ObjectId(teacherId)
+      teacher_id: new ObjectId(teacherId),
     });
 
     if (result.deletedCount === 0) {
