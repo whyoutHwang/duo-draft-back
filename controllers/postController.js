@@ -7,7 +7,7 @@ const postsCollection = db.collection("posts");
 // 모든 게시글 가져오기
 exports.getPosts = async (req, res) => {
   try {
-    const { postType, searchTerm } = req.query;
+    const { postType, searchTerm, page = 1, limit = 10 } = req.query;
     let query = {};
     console.log(postType, searchTerm);
 
@@ -19,8 +19,23 @@ exports.getPosts = async (req, res) => {
       query.title = { $regex: searchTerm, $options: "i" }; // 'i'는 대소문자 구분 없이 검색
     }
 
-    const posts = await postsCollection.find(query).toArray();
-    res.status(200).json(posts);
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const totalPosts = await postsCollection.countDocuments(query);
+    const totalPages = Math.ceil(totalPosts / parseInt(limit));
+
+    const posts = await postsCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .toArray();
+
+    res.status(200).json({
+      posts,
+      currentPage: parseInt(page),
+      totalPages,
+      totalPosts,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
