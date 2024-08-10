@@ -9,7 +9,6 @@ exports.getPosts = async (req, res) => {
   try {
     const { postType, searchTerm, page = 1, limit = 10 } = req.query;
     let query = {};
-    console.log(postType, searchTerm);
 
     if (postType && postType !== "전체") {
       query.postType = postType;
@@ -47,7 +46,7 @@ exports.getPosts = async (req, res) => {
 
 // 새 게시글 생성
 exports.createPost = async (req, res) => {
-  const { postType, title, content, teacherId } = req.body;
+  const { postType, title, content, teacherId, username } = req.body;
 
   if (!teacherId) {
     return res.status(400).json({
@@ -58,6 +57,7 @@ exports.createPost = async (req, res) => {
   try {
     const result = await postsCollection.insertOne({
       postType,
+      username,
       title,
       content,
       teacher_id: new ObjectId(teacherId),
