@@ -1,4 +1,5 @@
 const { MongoClient, ObjectId } = require("mongodb");
+const sanitizeHtml = require("sanitize-html");
 
 const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db("duo-draft-database");
@@ -47,10 +48,27 @@ exports.getPosts = async (req, res) => {
 // 새 게시글 생성
 exports.createPost = async (req, res) => {
   const { postType, title, content, teacherId, username } = req.body;
+  const images = req.files ? req.files.map((file) => file.location) : [];
 
   if (!teacherId) {
     return res.status(400).json({
       message: "teacherId는 필수 항목입니다.",
+    });
+  }
+
+  // HTML 콘텐츠 sanitize
+  const sanitizedContent = sanitizeHtml(content, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ["src", "alt"],
+    },
+  });
+
+  // 콘텐츠 길이 확인 (예: 10000자 제한)
+  if (sanitizedContent.length > 10000) {
+    return res.status(400).json({
+      message: "콘텐츠가 너무 깁니다. 10000자 이내로 작성해주세요.",
     });
   }
 
@@ -59,7 +77,8 @@ exports.createPost = async (req, res) => {
       postType,
       username,
       title,
-      content,
+      content: sanitizedContent,
+      images, // 이미지 URL 배열 추가
       teacher_id: new ObjectId(teacherId),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -106,9 +125,11 @@ exports.getPostById = async (req, res) => {
 };
 
 // 게시글 수정
+// 게시글 수정 (이미지 처리 추가)
 exports.updatePost = async (req, res) => {
   const { id } = req.params;
   const { postType, title, content, teacherId } = req.body;
+  const newImages = req.files ? req.files.map((file) => file.location) : [];
 
   if (!ObjectId.isValid(id) || !teacherId) {
     return res.status(400).json({
@@ -116,14 +137,36 @@ exports.updatePost = async (req, res) => {
     });
   }
 
+  // HTML 콘텐츠 sanitize
+  const sanitizedContent = sanitizeHtml(content, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ["src", "alt"],
+    },
+  });
+
   try {
+    const existingPost = await postsCollection.findOne({
+      _id: new ObjectId(id),
+    });
+    if (!existingPost) {
+      return res.status(404).json({
+        message: "게시글을 찾을 수 없습니다.",
+      });
+    }
+
+    // 기존 이미지와 새 이미지를 합칩니다.
+    const updatedImages = [...(existingPost.images || []), ...newImages];
+
     const result = await postsCollection.updateOne(
       { _id: new ObjectId(id), teacher_id: new ObjectId(teacherId) },
       {
         $set: {
           postType,
           title,
-          content,
+          content: sanitizedContent,
+          images: updatedImages, // 업데이트된 이미지 배열
           updatedAt: new Date(),
         },
       }
@@ -181,4 +224,18 @@ exports.deletePost = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+// 이미지만 업로드하는 새로운 함수 추가
+exports.uploadImages = async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: "업로드된 파일이 없습니다." });
+  }
+
+  const imageUrls = req.files.map((file) => file.location);
+
+  res.status(200).json({
+    message: "이미지가 성공적으로 업로드되었습니다.",
+    images: imageUrls,
+  });
 };
